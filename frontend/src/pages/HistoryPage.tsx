@@ -6,6 +6,7 @@ import { MonthNavigation } from "../components/MonthNavigation";
 import CategoryBreakdown from "../components/CategoryBreakdown";
 import { CalendarExpenseTable } from "../components/CalendarExpenseTable";
 import { ExpenseForm } from "../components/ExpenseForm";
+import CategorySelection from "../components/CategorySelection";
 import { Modal, Button } from "../vibes";
 import { COLORS } from "../constants/colors";
 
@@ -13,6 +14,7 @@ const HistoryPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Get year and month from URL params, default to current date if not provided
   const getInitialYearMonth = () => {
@@ -82,8 +84,15 @@ const HistoryPage: React.FC = () => {
     }
   };
 
+  const visibleExpenses =
+    selectedCategories.length > 0
+      ? expenses.filter((expense) =>
+          selectedCategories.includes(expense.category),
+        )
+      : expenses;
+
   // Calculate category breakdown
-  const categoryData = expenses.reduce(
+  const categoryData = visibleExpenses.reduce(
     (acc, expense) => {
       const category = expense.category || "Uncategorized";
       if (!acc[category]) {
@@ -159,6 +168,13 @@ const HistoryPage: React.FC = () => {
         onMonthChange={handleMonthChange}
       />
 
+      <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+        <CategorySelection
+          selectedCategories={selectedCategories}
+          onSelectedCategoriesChange={setSelectedCategories}
+        />
+      </div>
+
       <div>
         {loading ? (
           <div style={loadingStyle}>Loading...</div>
@@ -171,7 +187,7 @@ const HistoryPage: React.FC = () => {
             />
             <div style={{ marginTop: "32px" }}>
               <CalendarExpenseTable
-                expenses={expenses}
+                expenses={visibleExpenses}
                 onExpenseUpdated={fetchExpenses}
               />
             </div>
