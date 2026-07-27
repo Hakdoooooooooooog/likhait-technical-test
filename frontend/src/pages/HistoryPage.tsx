@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getExpenses, createExpense } from "../services/api";
 import { Expense, ExpenseFormData } from "../types";
 import YearNavigation from "../components/YearNavigation";
@@ -15,6 +15,7 @@ const HistoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const fetchRequestId = useRef(0);
 
   // Get year and month from URL params, default to current date if not provided
   const getInitialYearMonth = () => {
@@ -47,21 +48,32 @@ const HistoryPage: React.FC = () => {
     updateURL(selectedYear, selectedMonth);
   }, []);
 
-  useEffect(() => {
-    fetchExpenses();
-  }, [selectedYear, selectedMonth]);
+  const fetchExpenses = async (year = selectedYear, month = selectedMonth) => {
+    const requestId = ++fetchRequestId.current;
 
-  const fetchExpenses = async () => {
     try {
       setLoading(true);
-      const data = await getExpenses(selectedYear, selectedMonth);
-      setExpenses(data);
+      const data = await getExpenses(year, month);
+
+      if (requestId === fetchRequestId.current) {
+        setExpenses(data);
+      }
     } catch (error) {
+      if (requestId !== fetchRequestId.current) {
+        return;
+      }
+
       console.error("Error fetching expenses:", error);
     } finally {
-      setLoading(false);
+      if (requestId === fetchRequestId.current) {
+        setLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    fetchExpenses(selectedYear, selectedMonth);
+  }, [selectedYear, selectedMonth]);
 
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
@@ -77,7 +89,7 @@ const HistoryPage: React.FC = () => {
     try {
       await createExpense(data);
       setIsModalOpen(false);
-      fetchExpenses();
+      await fetchExpenses(selectedYear, selectedMonth);
     } catch (error) {
       console.error("Error creating expense:", error);
       throw error;
@@ -112,7 +124,10 @@ const HistoryPage: React.FC = () => {
   const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
 
   const pageStyle: React.CSSProperties = {
-    padding: "48px 64px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "24px",
+    padding: "24px",
     minHeight: "100vh",
     background: COLORS.secondary.s01,
   };

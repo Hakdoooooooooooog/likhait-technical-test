@@ -11,6 +11,12 @@ interface UseExpenseFormProps {
   onSubmit: (data: ExpenseFormData) => Promise<void>;
 }
 
+function isFutureDate(dateString: string): boolean {
+  const today = new Date();
+  const inputDate = new Date(dateString);
+  return inputDate > today;
+}
+
 export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
   const [formData, setFormData] = useState<ExpenseFormData>({
     amount: initialData?.amount || "",
@@ -47,6 +53,10 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
 
     if (!formData.date) {
       newErrors.date = "Date is required";
+    }
+
+    if (formData.date && isFutureDate(formData.date)) {
+      newErrors.date = "Date cannot be in the future.";
     }
 
     setErrors(newErrors);

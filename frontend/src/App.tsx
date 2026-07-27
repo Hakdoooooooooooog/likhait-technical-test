@@ -11,12 +11,16 @@ function App() {
     display: "flex",
     minHeight: "100vh",
     background: COLORS.secondary.s01,
+    overflowX: "hidden",
   };
 
   const mainStyle: React.CSSProperties = {
-    flex: 1,
+    flex: "0 0 auto",
+    width: isSidebarCollapsed ? "calc(100% - 80px)" : "calc(100% - 360px)",
     marginLeft: isSidebarCollapsed ? "80px" : "360px",
     transition: "margin-left 0.3s ease",
+    minWidth: 0,
+    boxSizing: "border-box",
   };
 
   const handleToggleSidebar = () => {
