@@ -16,7 +16,7 @@ class Api::ExpensesController < ApplicationController
   end
 
   def create
-    expense = Expense.new(expense_params)
+    expense = Expense.new(expense_params.merge(payer_name: expense_params[:payer_name].presence || "Anonymous"))
 
     if expense.save
       render json: format_expense(expense), status: :created
@@ -44,7 +44,7 @@ class Api::ExpensesController < ApplicationController
   private
 
   def expense_params
-    params.require(:expense).permit(:description, :amount, :category_id, :date)
+    params.require(:expense).permit(:description, :amount, :category_id, :date, :payer_name)
   end
 
   def format_expense(expense)
