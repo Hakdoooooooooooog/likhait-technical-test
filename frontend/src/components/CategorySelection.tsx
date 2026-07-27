@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { COLORS } from "../constants/colors";
 import { Button, Modal, TextField } from "../vibes";
 import { createCategory, fetchCategories } from "../services/api";
+import { getCategoryEmoji } from "../constants/categoryEmojis";
 
 interface CategorySelectionProps {
   selectedCategories?: string[];
@@ -222,7 +223,9 @@ export default function CategorySelection({
                   onChange={() => toggleCategory(category.name)}
                   style={{ margin: 0, outline: "none", boxShadow: "none" }}
                 />
-                <span>{category.name}</span>
+                <span>
+                  {getCategoryEmoji(category.name)} {category.name}
+                </span>
               </label>
             );
           })}

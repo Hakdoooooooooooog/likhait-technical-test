@@ -51,15 +51,12 @@ export function MonthNavigation({
     display: "flex",
     alignItems: "center",
     gap: "16px",
-    padding: "16px 0",
   };
 
   const containerStyle: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "repeat(12, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(48px, 1fr))",
     gap: "12px",
-    maxWidth: "900px",
-    marginRight: "32px",
     flex: 1,
   };
 
