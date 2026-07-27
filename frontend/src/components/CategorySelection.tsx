@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { COLORS } from "../constants/colors";
-import { fetchCategories } from "../services/api";
+import { Button, Modal, TextField } from "../vibes";
+import { createCategory, fetchCategories } from "../services/api";
 
 interface CategorySelectionProps {
   selectedCategories?: string[];
@@ -18,33 +19,25 @@ export default function CategorySelection({
   const [internalSelectedCategories, setInternalSelectedCategories] = useState<
     string[]
   >([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+
+  const loadCategories = async () => {
+    try {
+      const fetchedCategories = await fetchCategories();
+      setCategories(fetchedCategories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadCategories() {
-      try {
-        const fetchedCategories = await fetchCategories();
-        if (isMounted) {
-          setCategories(fetchedCategories);
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        if (isMounted) {
-          setCategories([]);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
     loadCategories();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   const visibleCategories = useMemo(() => {
@@ -80,6 +73,19 @@ export default function CategorySelection({
     backgroundColor: COLORS.background.card,
   };
 
+  const headerStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "1rem",
+  };
+
+  const headerTextStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.25rem",
+  };
+
   const titleStyle: React.CSSProperties = {
     margin: 0,
     fontSize: "1rem",
@@ -104,12 +110,12 @@ export default function CategorySelection({
     alignItems: "center",
     gap: "0.5rem",
     padding: "0.65rem 0.75rem",
-    border: `1px solid ${COLORS.border}`,
-    borderRadius: "0.6rem",
     backgroundColor: COLORS.background.main,
     color: COLORS.text.primary,
     cursor: "pointer",
-    transition: "background-color 0.15s ease, border-color 0.15s ease",
+    borderRadius: "0.6rem",
+    boxShadow: "inset 0 0 0 1px transparent",
+    transition: "background-color 0.15s ease",
   };
 
   const selectedStyle: React.CSSProperties = {
@@ -142,11 +148,57 @@ export default function CategorySelection({
     fontSize: "0.875rem",
   };
 
+  const modalActionsStyle: React.CSSProperties = {
+    display: "flex",
+    gap: "0.75rem",
+    justifyContent: "flex-end",
+    marginTop: "1rem",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    outline: "none",
+    boxShadow: "none",
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: "0.5rem",
+    padding: "0.5rem 0.75rem",
+    fontSize: "1rem",
+    width: "100%",
+  };
+
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+
+    if (!trimmedName) {
+      setCreateError("Category name is required.");
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      setCreateError("");
+      await createCategory({ name: trimmedName });
+      await loadCategories();
+      setNewCategoryName("");
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      setCreateError("Unable to create category. Try a different name.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div style={containerStyle}>
-      <div>
-        <p style={titleStyle}>Categories</p>
-        <p style={helperStyle}>Select one or more categories.</p>
+      <div style={headerStyle}>
+        <div style={headerTextStyle}>
+          <p style={titleStyle}>Categories</p>
+          <p style={helperStyle}>Select one or more categories.</p>
+        </div>
+
+        <Button variant="secondary" onClick={() => setIsCreateModalOpen(true)}>
+          Add Category
+        </Button>
       </div>
 
       {loading ? (
@@ -168,7 +220,7 @@ export default function CategorySelection({
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => toggleCategory(category.name)}
-                  style={{ margin: 0 }}
+                  style={{ margin: 0, outline: "none", boxShadow: "none" }}
                 />
                 <span>{category.name}</span>
               </label>
@@ -188,6 +240,50 @@ export default function CategorySelection({
           ))}
         </div>
       )}
+
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setCreateError("");
+        }}
+        title="Add Category"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <TextField
+            label="Category name"
+            placeholder="Enter a new category name"
+            value={newCategoryName}
+            onChange={(event) => setNewCategoryName(event.target.value)}
+            error={createError}
+            autoFocus
+            fullWidth
+            style={inputStyle}
+          />
+
+          <div style={modalActionsStyle}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsCreateModalOpen(false);
+                setCreateError("");
+              }}
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleCreateCategory}
+              disabled={isCreating}
+            >
+              {isCreating ? "Creating..." : "Create Category"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
