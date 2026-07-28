@@ -8,7 +8,7 @@ import CategorySelection from "../components/CategorySelection";
 import { Modal, Button } from "../vibes";
 import { COLORS } from "../constants/colors";
 import { useExpensesHistory } from "../hooks/useExpensesHistory";
-import { getInitialYearMonth } from "../utils/dateyearutils";
+import { getInitialYearMonth } from "../utils/dateYearUtils";
 
 const HistoryPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
