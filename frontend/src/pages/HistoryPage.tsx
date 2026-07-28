@@ -1,6 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
-import { getExpenses, createExpense } from "../services/api";
-import { Expense, ExpenseFormData } from "../types";
+import React, { useEffect, useState } from "react";
 import YearNavigation from "../components/YearNavigation";
 import { MonthNavigation } from "../components/MonthNavigation";
 import CategoryBreakdown from "../components/CategoryBreakdown";
@@ -9,30 +7,19 @@ import { ExpenseForm } from "../components/ExpenseForm";
 import CategorySelection from "../components/CategorySelection";
 import { Modal, Button } from "../vibes";
 import { COLORS } from "../constants/colors";
+import { useExpensesHistory } from "../hooks/useExpensesHistory";
+import { getInitialYearMonth } from "../utils/dateyearutils";
 
 const HistoryPage: React.FC = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const fetchRequestId = useRef(0);
 
-  // Get year and month from URL params, default to current date if not provided
-  const getInitialYearMonth = () => {
-    const params = new URLSearchParams(window.location.search);
-    const currentDate = new Date();
-    const yearParam = params.get("year");
-    const monthParam = params.get("month");
-
-    return {
-      year: yearParam ? parseInt(yearParam) : currentDate.getFullYear(),
-      month: monthParam ? parseInt(monthParam) : currentDate.getMonth() + 1,
-    };
-  };
 
   const initial = getInitialYearMonth();
   const [selectedYear, setSelectedYear] = useState(initial.year);
   const [selectedMonth, setSelectedMonth] = useState(initial.month);
+
+  const { loading, fetchExpenses, visibleExpenses, handleAddExpense } = useExpensesHistory(selectedYear, selectedMonth, setIsModalOpen, selectedCategories);
 
   // Update URL when year or month changes
   const updateURL = (year: number, month: number) => {
@@ -48,32 +35,6 @@ const HistoryPage: React.FC = () => {
     updateURL(selectedYear, selectedMonth);
   }, []);
 
-  const fetchExpenses = async (year = selectedYear, month = selectedMonth) => {
-    const requestId = ++fetchRequestId.current;
-
-    try {
-      setLoading(true);
-      const data = await getExpenses(year, month);
-
-      if (requestId === fetchRequestId.current) {
-        setExpenses(data);
-      }
-    } catch (error) {
-      if (requestId !== fetchRequestId.current) {
-        return;
-      }
-
-      console.error("Error fetching expenses:", error);
-    } finally {
-      if (requestId === fetchRequestId.current) {
-        setLoading(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    fetchExpenses(selectedYear, selectedMonth);
-  }, [selectedYear, selectedMonth]);
 
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
@@ -85,23 +46,6 @@ const HistoryPage: React.FC = () => {
     updateURL(selectedYear, month);
   };
 
-  const handleAddExpense = async (data: ExpenseFormData) => {
-    try {
-      await createExpense(data);
-      setIsModalOpen(false);
-      await fetchExpenses(selectedYear, selectedMonth);
-    } catch (error) {
-      console.error("Error creating expense:", error);
-      throw error;
-    }
-  };
-
-  const visibleExpenses =
-    selectedCategories.length > 0
-      ? expenses.filter((expense) =>
-          selectedCategories.includes(expense.category),
-        )
-      : expenses;
 
   // Calculate category breakdown
   const categoryData = visibleExpenses.reduce(
@@ -203,7 +147,7 @@ const HistoryPage: React.FC = () => {
             <div style={{ marginTop: "32px" }}>
               <CalendarExpenseTable
                 expenses={visibleExpenses}
-                onExpenseUpdated={fetchExpenses}
+                onExpenseUpdated={() => fetchExpenses(selectedYear, selectedMonth)}
               />
             </div>
           </>
