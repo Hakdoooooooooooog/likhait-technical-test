@@ -19,7 +19,13 @@ const HistoryPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(initial.year);
   const [selectedMonth, setSelectedMonth] = useState(initial.month);
 
-  const { loading, fetchExpenses, visibleExpenses, handleAddExpense } = useExpensesHistory(selectedYear, selectedMonth, setIsModalOpen, selectedCategories);
+  const {
+    loading,
+    visibleExpenses,
+    handleAddExpense,
+    handleUpdateExpense,
+    handleDeleteExpense,
+  } = useExpensesHistory(selectedYear, selectedMonth, setIsModalOpen, selectedCategories);
 
   // Update URL when year or month changes
   const updateURL = (year: number, month: number) => {
@@ -147,7 +153,8 @@ const HistoryPage: React.FC = () => {
             <div style={{ marginTop: "32px" }}>
               <CalendarExpenseTable
                 expenses={visibleExpenses}
-                onExpenseUpdated={() => fetchExpenses(selectedYear, selectedMonth)}
+                onUpdateExpense={handleUpdateExpense}
+                onDeleteExpense={handleDeleteExpense}
               />
             </div>
           </>

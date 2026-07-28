@@ -29,6 +29,7 @@ class Api::ExpensesController < ApplicationController
     expense = Expense.find(params[:id])
 
     if expense.update(expense_params)
+      expense.reload
       render json: format_expense(expense)
     else
       render json: { errors: expense.errors.full_messages }, status: :unprocessable_entity

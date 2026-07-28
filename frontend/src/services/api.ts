@@ -73,7 +73,9 @@ export async function createCategory(data: {
 export async function createExpense(data: ExpenseFormData): Promise<Expense> {
   // Convert category name to category_id
   const categories = await fetchCategories();
-  const category = categories.find((c) => c.name === data.category);
+  const category = categories.find(
+    (c) => c.name.trim().toLowerCase() === data.category.trim().toLowerCase()
+  );
 
   const expenseData = {
     description: data.description,
@@ -104,12 +106,29 @@ export async function updateExpense(
   id: number,
   data: Partial<ExpenseFormData>,
 ): Promise<Expense> {
+  let category_id: number | undefined;
+
+  if (data.category) {
+    const categories = await fetchCategories();
+    const targetCatName = data.category.trim().toLowerCase();
+    const category = categories.find(
+      (c) => c.name.trim().toLowerCase() === targetCatName
+    );
+    category_id = category?.id;
+  }
+
+  const expenseData: Record<string, unknown> = {};
+  if (data.description !== undefined) expenseData.description = data.description;
+  if (data.amount !== undefined) expenseData.amount = data.amount;
+  if (data.date !== undefined) expenseData.date = data.date;
+  if (category_id !== undefined) expenseData.category_id = category_id;
+
   const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ expense: data }),
+    body: JSON.stringify({ expense: expenseData }),
   });
 
   if (!response.ok) {
