@@ -10,20 +10,17 @@ import { COLORS } from "../constants/colors";
 import { Button, Modal, Pagination } from "../vibes";
 import { ExpenseForm } from "./ExpenseForm.tsx";
 import { usePagination } from "../hooks/usePagination";
-import { deleteExpense, updateExpense } from "../services/api";
 
 interface CalendarExpenseTableProps {
   expenses: Expense[];
-  onExpenseUpdated?: () => void;
-  onUpdateExpense?: (id: number, data: Partial<ExpenseFormData>) => Promise<void>;
-  onDeleteExpense?: (id: number) => Promise<void>;
+  onUpdateExpense: (id: number, data: Partial<ExpenseFormData>) => Promise<void>;
+  onDeleteExpense: (id: number) => Promise<void>;
 }
 
 const ITEMS_PER_PAGE = 10;
 
 export function CalendarExpenseTable({
   expenses,
-  onExpenseUpdated,
   onUpdateExpense,
   onDeleteExpense,
 }: CalendarExpenseTableProps) {
@@ -57,12 +54,7 @@ export function CalendarExpenseTable({
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      if (onDeleteExpense) {
-        await onDeleteExpense(deletingExpense.id);
-      } else {
-        await deleteExpense(deletingExpense.id);
-        onExpenseUpdated?.();
-      }
+      await onDeleteExpense(deletingExpense.id);
       setIsDeleteModalOpen(false);
       setDeletingExpense(null);
     } catch (error) {
@@ -76,12 +68,7 @@ export function CalendarExpenseTable({
   const handleUpdate = async (data: ExpenseFormData) => {
     if (!editingExpense) return;
     try {
-      if (onUpdateExpense) {
-        await onUpdateExpense(editingExpense.id, data);
-      } else {
-        await updateExpense(editingExpense.id, data);
-        onExpenseUpdated?.();
-      }
+      await onUpdateExpense(editingExpense.id, data);
       setIsEditModalOpen(false);
       setEditingExpense(null);
     } catch (error) {
