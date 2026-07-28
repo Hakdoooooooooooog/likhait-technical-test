@@ -33,21 +33,42 @@ export async function getExpenses(
   return response.json();
 }
 
+let cachedCategories: Array<{ id: number; name: string }> | null = null;
+let categoryFetchPromise: Promise<Array<{ id: number; name: string }>> | null = null;
+
 /**
- * Fetch all categories
+ * Fetch all categories (uses in-memory cache unless forceRefresh is true)
  */
-export async function fetchCategories(): Promise<
-  Array<{ id: number; name: string }>
-> {
-  const response = await fetch(`${API_BASE_URL}/categories`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch categories");
+export async function fetchCategories(
+  forceRefresh = false
+): Promise<Array<{ id: number; name: string }>> {
+  if (!forceRefresh && cachedCategories) {
+    return cachedCategories;
   }
-  return response.json();
+
+  if (!forceRefresh && categoryFetchPromise) {
+    return categoryFetchPromise;
+  }
+
+  categoryFetchPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories");
+      }
+      const data = await response.json();
+      cachedCategories = data;
+      return data;
+    } finally {
+      categoryFetchPromise = null;
+    }
+  })();
+
+  return categoryFetchPromise;
 }
 
 /**
- * Create a new category
+ * Create a new category and refresh category cache
  */
 export async function createCategory(data: {
   name: string;
@@ -64,7 +85,9 @@ export async function createCategory(data: {
     throw new Error("Failed to create category");
   }
 
-  return response.json();
+  const newCategory = await response.json();
+  cachedCategories = null;
+  return newCategory;
 }
 
 /**

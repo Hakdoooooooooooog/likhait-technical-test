@@ -9,6 +9,7 @@ import { Modal, Button } from "../vibes";
 import { COLORS } from "../constants/colors";
 import { useExpensesHistory } from "../hooks/useExpensesHistory";
 import { getInitialYearMonth } from "../utils/dateYearUtils";
+import { fetchCategories } from "../services/api";
 
 const HistoryPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,9 +37,12 @@ const HistoryPage: React.FC = () => {
     window.history.pushState({}, "", newURL);
   };
 
-  // Initialize URL params if not present
+
+
+  // Initialize URL params and prefetch categories
   useEffect(() => {
     updateURL(selectedYear, selectedMonth);
+    fetchCategories().catch(() => { });
   }, []);
 
 
