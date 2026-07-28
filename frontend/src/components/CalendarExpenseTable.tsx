@@ -61,7 +61,7 @@ export function CalendarExpenseTable({
         await onDeleteExpense(deletingExpense.id);
       } else {
         await deleteExpense(deletingExpense.id);
-        await onExpenseUpdated?.();
+        onExpenseUpdated?.();
       }
       setIsDeleteModalOpen(false);
       setDeletingExpense(null);
@@ -80,7 +80,7 @@ export function CalendarExpenseTable({
         await onUpdateExpense(editingExpense.id, data);
       } else {
         await updateExpense(editingExpense.id, data);
-        await onExpenseUpdated?.();
+        onExpenseUpdated?.();
       }
       setIsEditModalOpen(false);
       setEditingExpense(null);
