@@ -9,29 +9,34 @@ import { getCategoryEmoji } from "../constants/categoryEmojis";
 import { COLORS } from "../constants/colors";
 import { Button, Modal, Pagination } from "../vibes";
 import { ExpenseForm } from "./ExpenseForm.tsx";
-import { deleteExpense, updateExpense } from "../services/api";
+import { usePagination } from "../hooks/usePagination";
 
 interface CalendarExpenseTableProps {
   expenses: Expense[];
-  onExpenseUpdated: () => void;
+  onUpdateExpense: (id: number, data: Partial<ExpenseFormData>) => Promise<void>;
+  onDeleteExpense: (id: number) => Promise<void>;
 }
 
 const ITEMS_PER_PAGE = 10;
 
 export function CalendarExpenseTable({
   expenses,
-  onExpenseUpdated,
+  onUpdateExpense,
+  onDeleteExpense,
 }: CalendarExpenseTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    currentItems: currentExpenses,
+    currentPage,
+    totalPages,
+    setCurrentPage,
+  } = usePagination(expenses, ITEMS_PER_PAGE);
+
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const totalPages = Math.ceil(expenses.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentExpenses = expenses.slice(startIndex, endIndex);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
@@ -40,29 +45,32 @@ export function CalendarExpenseTable({
 
   const handleDelete = (expense: Expense) => {
     setDeletingExpense(expense);
+    setDeleteError(null);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
     if (!deletingExpense) return;
+    setIsDeleting(true);
+    setDeleteError(null);
     try {
-      await deleteExpense(deletingExpense.id);
+      await onDeleteExpense(deletingExpense.id);
       setIsDeleteModalOpen(false);
       setDeletingExpense(null);
-      onExpenseUpdated();
     } catch (error) {
       console.error("Failed to delete expense:", error);
-      alert("Failed to delete expense");
+      setDeleteError("Failed to delete expense. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleUpdate = async (data: ExpenseFormData) => {
     if (!editingExpense) return;
     try {
-      await updateExpense(editingExpense.id, data);
+      await onUpdateExpense(editingExpense.id, data);
       setIsEditModalOpen(false);
       setEditingExpense(null);
-      onExpenseUpdated();
     } catch (error) {
       console.error("Failed to update expense:", error);
       throw error;
@@ -192,7 +200,7 @@ export function CalendarExpenseTable({
               amount: editingExpense.amount.toString(),
               description: editingExpense.description,
               category: editingExpense.category,
-              date: formatDate(new Date(editingExpense.date)),
+              date: editingExpense.date ? editingExpense.date.split("T")[0] : formatDate(new Date()),
             }}
             onSubmit={handleUpdate}
             onCancel={() => {
@@ -207,8 +215,10 @@ export function CalendarExpenseTable({
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => {
+          if (isDeleting) return;
           setIsDeleteModalOpen(false);
           setDeletingExpense(null);
+          setDeleteError(null);
         }}
         title="Delete Expense"
       >
@@ -222,6 +232,11 @@ export function CalendarExpenseTable({
               {formatCurrency(deletingExpense.amount)}
             </p>
           )}
+          {deleteError && (
+            <p style={{ marginBottom: "1rem", color: COLORS.text.secondary, fontSize: "0.875rem" }}>
+              {deleteError}
+            </p>
+          )}
           <div
             style={{
               display: "flex",
@@ -231,15 +246,17 @@ export function CalendarExpenseTable({
           >
             <Button
               variant="secondary"
+              disabled={isDeleting}
               onClick={() => {
                 setIsDeleteModalOpen(false);
                 setDeletingExpense(null);
+                setDeleteError(null);
               }}
             >
               Cancel
             </Button>
-            <Button variant="danger" onClick={confirmDelete}>
-              Delete
+            <Button variant="danger" disabled={isDeleting} onClick={confirmDelete}>
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </div>
         </div>

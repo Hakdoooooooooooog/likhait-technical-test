@@ -22,6 +22,7 @@ export const CATEGORY_EMOJIS: Record<string, string> = {
   healthcare: "🏥",
   education: "📚",
   travel: "✈️",
+  personal: "👤",
   other: "📦",
 };
 
