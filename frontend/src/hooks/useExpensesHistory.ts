@@ -4,7 +4,7 @@ import { createExpense, getExpenses } from "../services/api";
 
 interface useExpensesProps {
     loading: boolean,
-    fetchExpenses: (year: number, month: number) => Promise<void>,
+    fetchExpenses: (year?: number, month?: number) => Promise<void>,
     visibleExpenses: Expense[],
     handleAddExpense: (expense: ExpenseFormData) => Promise<void>,
 }
@@ -14,7 +14,7 @@ export const useExpensesHistory = (selectedYear: number, selectedMonth: number, 
     const [loading, setLoading] = useState(true);
     const fetchRequestId = useRef(0);
 
-    const fetchExpenses = async (year: number, month: number) => {
+    const fetchExpenses = async (year: number = selectedYear, month: number = selectedMonth) => {
         const requestId = ++fetchRequestId.current;
 
         try {
@@ -25,9 +25,13 @@ export const useExpensesHistory = (selectedYear: number, selectedMonth: number, 
                 setExpenses(data);
             }
         } catch (error) {
-            console.error("Error fetching expenses:", error);
+            if (requestId === fetchRequestId.current) {
+                console.error("Error fetching expenses:", error);
+            }
         } finally {
-            setLoading(false);
+            if (requestId === fetchRequestId.current) {
+                setLoading(false);
+            }
         }
     };
 
